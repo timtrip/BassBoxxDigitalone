@@ -1,0 +1,2 @@
+# BassBoxxDigitalone
+vst3,
