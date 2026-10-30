@@ -16,11 +16,13 @@ BassBoxxDigitalOneAudioProcessorEditor::BassBoxxDigitalOneAudioProcessorEditor(B
     styleSlider(drive, driveLabel, "DRIVE");
     styleSlider(pluck, pluckLabel, "PLUCK");
     styleSlider(slide, slideLabel, "SLIDE");
+    styleSlider(wah, wahLabel, "WAH");
     pickupAttach = std::make_unique<Attachment>(processor.parameters, "pickup", pickup);
     subAttach = std::make_unique<Attachment>(processor.parameters, "sub", sub);
     driveAttach = std::make_unique<Attachment>(processor.parameters, "drive", drive);
     pluckAttach = std::make_unique<Attachment>(processor.parameters, "pluck", pluck);
     slideAttach = std::make_unique<Attachment>(processor.parameters, "slide", slide);
+    wahAttach = std::make_unique<Attachment>(processor.parameters, "wah", wah);
     subWave.addItem("Sine", 1);
     subWave.addItem("Triangle", 2);
     subWave.addItem("Square", 3);
@@ -84,13 +86,13 @@ void BassBoxxDigitalOneAudioProcessorEditor::resized() {
     subtitle.setBounds(36, 59, 360, 24);
     subWaveLabel.setBounds(558, 112, 115, 20);
     subWave.setBounds(558, 134, 145, 30);
-    const int y = 330, w = 145;
-    juce::Slider* sliders[] = { &pickup, &sub, &drive, &pluck, &slide };
-    juce::Label* labels[] = { &pickupLabel, &subLabel, &driveLabel, &pluckLabel, &slideLabel };
-    for (int i = 0; i < 5; ++i) {
-        const int x = 16 + i * 146;
-        labels[i]->setBounds(x, y, 136, 22);
-        sliders[i]->setBounds(x + 8, y + 22, 120, 116);
+    const int y = 330;
+    juce::Slider* sliders[] = { &pickup, &sub, &drive, &pluck, &slide, &wah };
+    juce::Label* labels[] = { &pickupLabel, &subLabel, &driveLabel, &pluckLabel, &slideLabel, &wahLabel };
+    for (int i = 0; i < 6; ++i) {
+        const int x = 8 + i * 124;
+        labels[i]->setBounds(x, y, 120, 22);
+        sliders[i]->setBounds(x + 4, y + 22, 112, 116);
     }
 }
 

@@ -13,6 +13,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout BassBoxxDigitalOneAudioProce
     p.push_back(std::make_unique<AudioParameterFloat>("drive", "Drive", NormalisableRange<float>(0.0f, 1.0f, 0.001f), 0.12f));
     p.push_back(std::make_unique<AudioParameterFloat>("pluck", "Pluck", NormalisableRange<float>(0.15f, 1.0f, 0.001f), 0.68f));
     p.push_back(std::make_unique<AudioParameterFloat>("slide", "Slide Time", NormalisableRange<float>(0.0f, 500.0f, 1.0f), 0.0f, "ms"));
+    p.push_back(std::make_unique<AudioParameterFloat>("wah", "Wah", NormalisableRange<float>(0.0f, 1.0f, 0.001f), 0.0f));
     p.push_back(std::make_unique<AudioParameterChoice>("subWave", "Sub Wave",
         StringArray { "Sine", "Triangle", "Square", "Saw" }, 0));
     return { p.begin(), p.end() };
@@ -20,10 +21,20 @@ juce::AudioProcessorValueTreeState::ParameterLayout BassBoxxDigitalOneAudioProce
 
 void BassBoxxDigitalOneAudioProcessor::prepareToPlay(double sampleRate, int samplesPerBlock) {
     currentSampleRate = sampleRate;
+    juce::dsp::ProcessSpec wahSpec;
+    wahSpec.sampleRate = sampleRate;
+    wahSpec.maximumBlockSize = static_cast<juce::uint32>(samplesPerBlock);
+    wahSpec.numChannels = 1;
+    wahFilter.prepare(wahSpec);
     stringBuffer.setSize(1, juce::roundToInt(sampleRate / 20.0) + samplesPerBlock + 8);
     stringBuffer.clear();
     writeIndex = 0;
     feedbackState = amplitude = amplitudeTarget = 0.0f;
+    wahFilter.reset();
+    wahFilter.setType(juce::dsp::StateVariableTPTFilterType::bandpass);
+    wahFilter.setResonance(0.85f);
+    wahFilter.setCutoffFrequency(900.0f);
+    wahPhase = 0.0f;
 }
 void BassBoxxDigitalOneAudioProcessor::releaseResources() {}
 bool BassBoxxDigitalOneAudioProcessor::isBusesLayoutSupported(const BusesLayout& layouts) const {
@@ -68,14 +79,18 @@ void BassBoxxDigitalOneAudioProcessor::processBlock(juce::AudioBuffer<float>& bu
     const float subMix = parameters.getRawParameterValue("sub")->load();
     const float drive = parameters.getRawParameterValue("drive")->load();
     const float slideMs = parameters.getRawParameterValue("slide")->load();
+    const float wahAmount = parameters.getRawParameterValue("wah")->load();
     const int subWave = juce::roundToInt(parameters.getRawParameterValue("subWave")->load());
     auto* left = buffer.getWritePointer(0);
     auto* right = buffer.getNumChannels() > 1 ? buffer.getWritePointer(1) : left;
     auto event = midi.begin();
     const auto end = midi.end();
     for (int i = 0; i < buffer.getNumSamples(); ++i) {
-        while (event != end && event->samplePosition <= i) {
-            const auto msg = event->getMessage();
+        while (event != end) {
+            const auto metadata = *event;
+            if (metadata.samplePosition > i)
+                break;
+            const auto msg = metadata.getMessage();
             if (msg.isNoteOn()) {
                 activeMidiNote = msg.getNoteNumber();
                 pluck(static_cast<float>(juce::MidiMessage::getMidiNoteInHertz(activeMidiNote)), msg.getFloatVelocity());
@@ -117,7 +132,14 @@ void BassBoxxDigitalOneAudioProcessor::processBlock(juce::AudioBuffer<float>& bu
         else if (subWave == 2) wave = sine >= 0.0f ? 1.0f : -1.0f;
         else if (subWave == 3) wave = subPhase / juce::MathConstants<float>::pi - 1.0f;
         const float sub = wave;
-        const float in = (body * 2.8f + sub * subMix * 0.72f) * amplitude;
+        float in = (body * 2.8f + sub * subMix * 0.72f) * amplitude;
+        if (wahAmount > 0.001f) {
+            wahPhase += juce::MathConstants<float>::twoPi * 1.7f / static_cast<float>(currentSampleRate);
+            if (wahPhase >= juce::MathConstants<float>::twoPi) wahPhase -= juce::MathConstants<float>::twoPi;
+            const float sweep = 0.5f + 0.5f * std::sin(wahPhase);
+            wahFilter.setCutoffFrequency(350.0f + sweep * 2850.0f * wahAmount);
+            in = in * (1.0f - wahAmount) + wahFilter.processSample(0, in) * wahAmount * 2.2f;
+        }
         const float gain = 1.0f + drive * 18.0f;
         const float out = std::tanh(in * gain) / std::tanh(gain);
         left[i] = right[i] = out * 0.85f;

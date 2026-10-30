@@ -44,6 +44,8 @@ private:
     float amplitudeTarget = 0.0f;
     float subPhase = 0.0f;
     juce::Random random;
+    juce::dsp::StateVariableTPTFilter<float> wahFilter;
+    float wahPhase = 0.0f;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(BassBoxxDigitalOneAudioProcessor)
 };

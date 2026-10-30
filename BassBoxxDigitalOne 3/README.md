@@ -1,4 +1,4 @@
-# Bass Boxx Digital One
+# Bass Boxx Digital One — v0.9
 
 A JUCE 8 virtual instrument prototype centered on one modeled bass string and a movable virtual pickup. It builds as a VST3 plug-in or a standalone instrument.
 
@@ -9,6 +9,7 @@ A JUCE 8 virtual instrument prototype centered on one modeled bass string and a 
 - **Drive:** adds saturation.
 - **Pluck:** changes the excitation brightness.
 - **Slide:** sets glide time between played pitches; zero gives immediate pitch changes.
+- **Wah:** adds a slow, resonant band-pass sweep to the bass. Turn it fully down for the unfiltered sound.
 - **Pitch bend:** responds to MIDI pitch wheel over a two-semitone range in either direction.
 
 The instrument is monophonic by design. Play it from a MIDI keyboard or a DAW MIDI track. A note-on plucks the string; the matching note-off damps it.

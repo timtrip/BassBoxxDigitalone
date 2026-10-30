@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.22)
-project(BassBoxxDigitalOne VERSION 0.1.0)
+project(BassBoxxDigitalOne VERSION 0.9.0)
 
 include(FetchContent)
 FetchContent_Declare(JUCE
@@ -21,6 +21,8 @@ juce_add_plugin(BassBoxxDigitalOne
   IS_MIDI_EFFECT FALSE
   EDITOR_WANTS_KEYBOARD_FOCUS TRUE
   COPY_PLUGIN_AFTER_BUILD FALSE)
+
+juce_generate_juce_header(BassBoxxDigitalOne)
 
 target_sources(BassBoxxDigitalOne PRIVATE
   Source/PluginProcessor.cpp
